@@ -41,6 +41,7 @@ public class BpmnTestUtils {
                     executeTask(processEngine, processDefinition, processInstanceId, scanner, task);
                 }
             }
+            printHistory(processDefinition, getHistory(processEngine.getHistoryService(), processInstanceId));
         }
     }
 
@@ -49,13 +50,10 @@ public class BpmnTestUtils {
         FormData formData = processEngine.getFormService().getTaskFormData(task.getId());
         Map<String, Object> userInput = getUserInput(formData, scanner);
         processEngine.getTaskService().complete(task.getId(), userInput);
-        printHistory(processDefinition, processEngine.getHistoryService(), processInstanceId);
     }
 
     public static List<Task> getOutstandingTasks(TaskService taskService, String processInstanceId) {
-//        List<Task> tasks = taskService.createTaskQuery().taskCandidateGroup(group).list();
         List<Task> tasks = taskService.createTaskQuery().processInstanceId(processInstanceId).list();
-//        out.println("Active outstanding tasks: [" + tasks.size() + "]");
         return tasks;
     }
 
@@ -66,7 +64,6 @@ public class BpmnTestUtils {
         Map<String, Object> userInput = startEventWithFormData ? getUserInput(startFormData, scanner) : Collections.emptyMap();
         ProcessInstance processInstance = runtimeService.startProcessInstanceByKey(processDefinition.getKey(), userInput);
 
-//        out.println("Process started with process instance id [" + processInstance.getProcessInstanceId() + "] key [" + processInstance.getProcessDefinitionKey() + "]");
         return processInstance.getId();
     }
 
@@ -106,13 +103,12 @@ public class BpmnTestUtils {
                     variables.put(formProperty.getId(), value);
                 } else if (EnumFormType.class.isInstance(formProperty.getType())) {
                     Map<String, String> values = (Map<String, String>) formProperty.getType().getInformation("values");
-
                     List<Map.Entry<String, String>> entryList = new ArrayList<>(values.entrySet());
                     Stream<String> objectStream = entryList.stream()
                             .map(Map.Entry::getValue);
-                    String valueOptions = Streams.mapWithIndex(objectStream, (String e, long i) -> "(" + i + ")" + e)
+                    String valueOptions = Streams.mapWithIndex(objectStream,
+                        (String e, long i) -> "[" + i + "]" + e)
                             .collect(Collectors.joining(", "));
-
                     out.println(formProperty.getName() + "? ["+valueOptions+"]");
                     Integer value = Integer.valueOf(scanner.nextLine());
                     variables.put(formProperty.getId(), entryList.get(value).getKey());
@@ -130,13 +126,10 @@ public class BpmnTestUtils {
         out.println("Processing Task [" + task.getName() + "]");
     }
 
-    public static void printHistory(ProcessDefinition processDefinition, HistoryService historyService, String processInstanceId) {
+    public static void printHistory(ProcessDefinition processDefinition, List<HistoricActivityInstance> activities) {
         HistoricActivityInstance endActivity = null;
-        List<HistoricActivityInstance> activities =
-                historyService.createHistoricActivityInstanceQuery()
-                        .processInstanceId(processInstanceId)
-                        .orderByHistoricActivityInstanceEndTime().asc()
-                        .list();
+
+        System.out.println("---------------- History --------------");
         for (HistoricActivityInstance activity : activities) {
             if (activity.getActivityType() == "startEvent") {
                 out.println("BEGIN " + processDefinition.getName() + " [" + processDefinition.getKey() + "] " + activity.getStartTime());
@@ -154,6 +147,15 @@ public class BpmnTestUtils {
             out.println("-- " + endActivity.getActivityName() + " [" + endActivity.getActivityId() + "] " + endActivity.getDurationInMillis() + " ms");
             out.println("COMPLETE " + processDefinition.getName() + " [" + processDefinition.getKey() + "] " + endActivity.getEndTime());
         }
+    }
+
+    public static List getHistory(HistoryService historyService, String processInstanceId) {
+        List<HistoricActivityInstance> activities =
+                historyService.createHistoricActivityInstanceQuery()
+                        .processInstanceId(processInstanceId)
+                        .orderByHistoricActivityInstanceEndTime()
+                        .asc().list();
+        return activities;
     }
 
     public static ProcessEngine getProcessEngine() {

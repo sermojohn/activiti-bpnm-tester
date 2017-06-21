@@ -64,7 +64,7 @@
                     <!-- MainClass in mainfest make a executable jar -->
                     <archive>
                         <manifest>
-                            <mainClass>gr.iserm.java.activiti.OnboardingProcess</mainClass>
+                            <mainClass>gr.iserm.java.activiti.onboarding.OnboardingProcess</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
