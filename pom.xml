@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>gr.iserm.java</groupId>
-    <artifactId>activitii-quick-start</artifactId>
+    <artifactId>activiti-bpmn-tester</artifactId>
     <version>1.0-SNAPSHOT</version>
 
     <properties>
